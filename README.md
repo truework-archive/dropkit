@@ -44,17 +44,19 @@ function Dropdown() {
     <>
       <button {...controlProps}>{label}</button>
 
-      <ul {...dropdownProps}>
-        {items.map(({
-          value,
-          label,
-          selected,
-          highlighted,
-          itemProps,
-        }) => (
-          <li key={label} {...itemProps}>{label}</li>
-        ))}
-      </ul>
+      {isOpen && (
+        <ul {...dropdownProps}>
+          {items.map(({
+            value,
+            label,
+            selected,
+            highlighted,
+            itemProps,
+          }) => (
+            <li key={label} {...itemProps}>{label}</li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }
