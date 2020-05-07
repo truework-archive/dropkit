@@ -1,0 +1,46 @@
+{
+  "name": "use-drop",
+  "version": "0.1.0",
+  "description": "A minimalist approach to custom dropdowns.",
+  "source": "index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "unpkg": "dist/index.umd.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "microbundle build",
+    "watch": "microbundle watch",
+    "test": "ava test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/estrattonbailey/use-drop.git"
+  },
+  "author": "estrattonbailey",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/estrattonbailey/use-drop/issues"
+  },
+  "homepage": "https://github.com/estrattonbailey/use-drop#readme",
+  "devDependencies": {
+    "ava": "^2.4.0",
+    "microbundle": "^0.11.0",
+    "react": "^16.13.1",
+    "ts-node": "^8.4.1"
+  },
+  "ava": {
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
+  },
+  "peerDependencies": {
+    "react": ">= 16.9"
+  }
+}
