@@ -7,6 +7,30 @@ const useNative =
     ? /iPad|iPhone|Android/i.test(navigator.userAgent)
     : true;
 
+function scrollTo(parent, child) {
+  const { top: pt, bottom: pb } = parent.getBoundingClientRect();
+  const { scrollTop: pst } = parent;
+  const { top: ct, bottom: cb } = child.getBoundingClientRect();
+  const ch = cb - ct;
+
+  const above = cb <= pt;
+  const below = ct + ch > pb;
+
+  if (!above && !below) return;
+
+  const offset = above ? pt - ct : cb - pb;
+  const distance = offset * (above ? -1 : 1);
+
+  parent.scroll(0, pst + distance);
+}
+
+export function useScroll(scrollParent, activeElement) {
+  React.useEffect(() => {
+    if (!scrollParent || !activeElement) return;
+    scrollTo(scrollParent, activeElement);
+  }, [scrollParent, activeElement]);
+}
+
 export function useDrop({
   multiple,
   placeholder = "",
@@ -23,6 +47,7 @@ export function useDrop({
   const [isOpen, setIsOpen] = React.useState(false);
   const [highlightedValue, setHighlightedValue] = React.useState(values[0]);
   const [filter, setFilter] = React.useState("");
+  const [options, setOptions] = React.useState([]);
 
   const valueAttr = `data-${hash}-option-value`;
   const labelAttr = `data-${hash}-option-label`;
@@ -81,8 +106,21 @@ export function useDrop({
     [items, value, highlightedValue]
   );
 
+  React.useLayoutEffect(() => {
+    setOptions([].slice.call(document.querySelectorAll(`[${valueAttr}]`)));
+  }, [isOpen]);
+
+  const selected = React.useMemo(() => {
+    return options.filter(
+      n => n.getAttribute(valueAttr) === highlightedValue
+    )[0];
+  }, [options, highlightedValue]);
+
   React.useEffect(() => {
-    function keydown({ key, keyCode }) {
+    function keydown(e) {
+      e.preventDefault();
+
+      const { key, keyCode } = e;
       const control = controlRef.current;
 
       if (!control) return;
@@ -98,12 +136,7 @@ export function useDrop({
       }
 
       if (isOpen) {
-        const options = [].slice.call(
-          document.querySelectorAll(`[${valueAttr}]`)
-        );
-        const selected = options.filter(
-          n => n.getAttribute(valueAttr) === highlightedValue
-        )[0];
+        const options = [].slice.call(document.querySelectorAll(`[${valueAttr}]`));
 
         if (up || down) {
           const lastIndex = options.length - 1;
@@ -147,10 +180,9 @@ export function useDrop({
     return () => {
       document.removeEventListener("keydown", keydown);
     };
-  }, [isOpen, highlightedValue, controlRef, emitValues]);
+  }, [isOpen, options, controlRef, emitValues]);
 
   React.useEffect(() => {
-    const options = [].slice.call(document.querySelectorAll(`[${valueAttr}]`));
     const highlighted = options.filter(
       n => n.getAttribute(labelAttr).indexOf(filter) > -1
     )[0];
@@ -161,7 +193,7 @@ export function useDrop({
       setHighlightedValue(value);
       setFilter("");
     }
-  }, [filter]);
+  }, [filter, options]);
 
   React.useEffect(() => {
     function click(e) {
@@ -201,8 +233,9 @@ export function useDrop({
     isOpen,
     value: multiple ? values : value,
     label: computedLabel,
-    highlightedValue,
     items: itemsEnhanced,
+    highlightedValue,
+    selected,
     controlProps: {
       ref: controlRef,
       id: hash,
