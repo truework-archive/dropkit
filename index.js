@@ -1,6 +1,6 @@
 import React from "react";
 
-let id = 10; // start at a
+let instance = 10; // start at a
 
 const useNative =
   typeof navigator !== "undefined"
@@ -32,26 +32,33 @@ export function useScroll(scrollParent, activeElement) {
 }
 
 export function useDrop({
-  multiple,
-  placeholder = "",
   value = "",
   items,
+  multiple,
+  placeholder = "",
   onUpdate
 }) {
+  const id = React.useMemo(() => (instance++).toString(36), []);
+
+  // computed values
   const labels = [];
   const values = [].concat(value).filter(Boolean);
 
-  const hash = React.useMemo(() => (id++).toString(36), []);
+  // refs
   const controlRef = React.useRef(null);
   const dropdownRef = React.useRef(null);
+
+  // state
   const [isOpen, setIsOpen] = React.useState(false);
   const [highlightedValue, setHighlightedValue] = React.useState(values[0]);
   const [filter, setFilter] = React.useState("");
   const [options, setOptions] = React.useState([]);
 
-  const valueAttr = `data-${hash}-option-value`;
-  const labelAttr = `data-${hash}-option-label`;
+  // option attributes
+  const valueAttr = `data-${id}-option-value`;
+  const labelAttr = `data-${id}-option-label`;
 
+  // wrapper around onUpdate
   const emitValues = React.useCallback(
     val => {
       if (onUpdate) {
@@ -67,6 +74,7 @@ export function useDrop({
     [values, multiple, onUpdate]
   );
 
+  // merge internal state/methods with items array
   const itemsEnhanced = React.useMemo(
     () =>
       items.map(item => {
@@ -103,23 +111,25 @@ export function useDrop({
           return createItem(item);
         }
       }),
-    [items, value, highlightedValue]
+    [items, highlightedValue]
   );
 
-  React.useLayoutEffect(() => {
-    setOptions([].slice.call(document.querySelectorAll(`[${valueAttr}]`)));
-  }, [isOpen]);
-
-  const selected = React.useMemo(() => {
+  // compute selected option based on highlightedValue
+  const highlighted = React.useMemo(() => {
     return options.filter(
       n => n.getAttribute(valueAttr) === highlightedValue
     )[0];
   }, [options, highlightedValue]);
 
+  // only search for options when open
+  React.useLayoutEffect(() => {
+    const nodes = [].slice.call(document.querySelectorAll(`[${valueAttr}]`));
+    if (nodes.length) setOptions(nodes);
+  }, [isOpen]);
+
+  // all key events
   React.useEffect(() => {
     function keydown(e) {
-      e.preventDefault();
-
       const { key, keyCode } = e;
       const control = controlRef.current;
 
@@ -131,16 +141,17 @@ export function useDrop({
       const space = key === " ";
       const esc = key === "Escape";
 
-      if (document.activeElement === control && !isOpen && (up || down)) {
-        setIsOpen(true);
+      if (document.activeElement === control) {
+        if (!isOpen && (up || down)) setIsOpen(true);
+        if (space) setIsOpen(!isOpen);
       }
 
       if (isOpen) {
-        const options = [].slice.call(document.querySelectorAll(`[${valueAttr}]`));
-
         if (up || down) {
+          e.preventDefault();
+
           const lastIndex = options.length - 1;
-          const currIndex = options.indexOf(selected);
+          const currIndex = options.indexOf(highlighted);
           const nextIndex = up ? currIndex - 1 : currIndex + 1;
           const nextOption =
             options[
@@ -151,27 +162,28 @@ export function useDrop({
           labels.push(nextOption.getAttribute(labelAttr));
         } else if (enter && isOpen) {
           if (!multiple) setIsOpen(false);
-          emitValues(selected.getAttribute(valueAttr));
-        }
-
-        if (
+          emitValues(highlighted.getAttribute(valueAttr));
+        } else if (esc) {
+          setIsOpen(false);
+        } else if (
           (keyCode >= 65 && keyCode <= 90) || // alpha
           (keyCode >= 48 && keyCode <= 57) // numeric
         ) {
-          setFilter(filter + key);
+          const next = filter + key;
+          const highlighted = options.filter(
+            n => n.getAttribute(labelAttr).toLowerCase().indexOf(next) > -1
+          )[0];
+
+          setFilter(next);
+
+          if (highlighted) {
+            setHighlightedValue(highlighted.getAttribute(valueAttr));
+          } else {
+            setHighlightedValue(value);
+          }
         } else {
           setFilter("");
         }
-      }
-
-      if (esc) {
-        setIsOpen(false);
-        setHighlightedValue(values[0]);
-      }
-
-      if (space) {
-        setIsOpen(!isOpen);
-        setHighlightedValue(values[0]);
       }
     }
 
@@ -180,21 +192,9 @@ export function useDrop({
     return () => {
       document.removeEventListener("keydown", keydown);
     };
-  }, [isOpen, options, controlRef, emitValues]);
+  }, [isOpen, controlRef, emitValues]);
 
-  React.useEffect(() => {
-    const highlighted = options.filter(
-      n => n.getAttribute(labelAttr).indexOf(filter) > -1
-    )[0];
-
-    if (highlighted) {
-      setHighlightedValue(highlighted.getAttribute(valueAttr));
-    } else {
-      setHighlightedValue(value);
-      setFilter("");
-    }
-  }, [filter, options]);
-
+  // outside click
   React.useEffect(() => {
     function click(e) {
       const dropdown = dropdownRef.current;
@@ -229,21 +229,22 @@ export function useDrop({
     : labels[0] || placeholder;
 
   return {
+    id,
     useNative,
     isOpen,
-    value: multiple ? values : value,
     label: computedLabel,
     items: itemsEnhanced,
-    highlightedValue,
-    selected,
     controlProps: {
       ref: controlRef,
-      id: hash,
+      id,
       role: "combobox",
-      "aria-label": multiple ? computedLabel.join(", ") + ", " : "",
-      "aria-controls": `${hash}-dropdown`,
+      "aria-label": multiple ? computedLabel.join(", ") + ", " : computedLabel,
+      "aria-controls": `drop-${id}`,
       "aria-haspopup": "listbox",
       "aria-expanded": isOpen,
+      onBlur(e) {
+        setIsOpen(false); // TODO
+      },
       onClick(e) {
         // avoid triggering by Enter TODO test this
         if (e.clientX + e.clientY > 0) {
@@ -253,8 +254,12 @@ export function useDrop({
     },
     dropdownProps: {
       ref: dropdownRef,
-      id: `${hash}-dropdown`,
+      id: `drop-${id}`,
       role: "listbox"
-    }
+    },
+    __meta: {
+      highlightedValue,
+      highlightedNode: highlighted,
+    },
   };
 }
