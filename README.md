@@ -23,7 +23,7 @@ import { useDrop } from "use-drop";
 function Dropdown() {
   const [value, setValue] = React.useState();
 
-  const { label, items, isOpen, controlProps, dropdownProps } = useDropdown({
+  const { label, items, isOpen, controlProps, dropProps } = useDropdown({
     value,
     placeholder: "Please select",
     multiple: true,
@@ -45,7 +45,7 @@ function Dropdown() {
       <button {...controlProps}>{label}</button>
 
       {isOpen && (
-        <ul {...dropdownProps}>
+        <ul {...dropProps}>
           {items.map(({
             value,
             label,
@@ -64,4 +64,4 @@ function Dropdown() {
 
 ### License
 
-MIT License © [Truework](https://www.truework.com)
+MIT License © [Eric Bailey](https://estrattonbailey.com)
