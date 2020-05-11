@@ -2,7 +2,7 @@ import React from "react";
 
 let instance = 10; // start at a
 
-const useNative =
+export const useNative =
   typeof navigator !== "undefined"
     ? /iPad|iPhone|Android/i.test(navigator.userAgent)
     : true;
@@ -24,7 +24,10 @@ function scrollTo(parent, child) {
   parent.scroll(0, pst + distance);
 }
 
+// scrollParent must be positioned
 export function useScroll(scrollParent, activeElement) {
+  if (typeof HTMLElement.prototype.scroll !== 'function') return; // unsupported
+
   React.useEffect(() => {
     if (!scrollParent || !activeElement) return;
     scrollTo(scrollParent, activeElement);
@@ -49,9 +52,10 @@ export function useDrop({
   const dropdownRef = React.useRef(null);
 
   // state
+  const isMouseDown = React.useRef(false); // avoid re-render
+  const filter = React.useRef(''); // avoid re-render
   const [isOpen, setIsOpen] = React.useState(false);
   const [highlightedValue, setHighlightedValue] = React.useState(values[0]);
-  const [filter, setFilter] = React.useState("");
   const [options, setOptions] = React.useState([]);
 
   // option attributes
@@ -59,7 +63,7 @@ export function useDrop({
   const labelAttr = `data-${id}-option-label`;
 
   // wrapper around onUpdate
-  const emitValues = React.useCallback(
+  const _onUpdate = React.useCallback(
     val => {
       if (onUpdate) {
         onUpdate(
@@ -75,26 +79,25 @@ export function useDrop({
   );
 
   // merge internal state/methods with items array
-  const itemsEnhanced = React.useMemo(
+  const _items = React.useMemo(
     () =>
       items.map(item => {
         function createItem(i, { isGroupDisabled } = {}) {
           if (values.indexOf(i.value) > -1) labels.push(i.label);
 
+          const disabled = i.disabled || isGroupDisabled;
+
           return {
             ...i,
             selected: values.indexOf(i.value) > -1,
             highlighted: highlightedValue === i.value,
-            itemProps: {
+            itemProps: disabled ? {} : {
               [valueAttr]: i.value,
               [labelAttr]: i.label,
               onClick() {
-                if (!i.disabled && !isGroupDisabled) {
-                  labels.push(i.label);
-                  emitValues(i.value);
-                  setHighlightedValue(i.value);
-                  if (!multiple) setIsOpen(false);
-                }
+                _onUpdate(i.value);
+                setHighlightedValue(i.value);
+                if (!multiple) setIsOpen(false);
               }
             }
           };
@@ -111,8 +114,14 @@ export function useDrop({
           return createItem(item);
         }
       }),
-    [items, highlightedValue]
+    [items, values, highlightedValue]
   );
+
+  const _label = multiple
+    ? labels.length
+      ? labels
+      : [placeholder]
+    : labels[0] || placeholder;
 
   // compute selected option based on highlightedValue
   const highlighted = React.useMemo(() => {
@@ -127,6 +136,24 @@ export function useDrop({
     if (nodes.length) setOptions(nodes);
   }, [isOpen]);
 
+  // used to determine if drop should close on blur
+  React.useEffect(() => {
+    function mousedown() {
+      isMouseDown.current = true;
+    }
+    function mouseup() {
+      isMouseDown.current = false;
+    }
+
+    document.addEventListener("mousedown", mousedown);
+    document.addEventListener("mouseup", mouseup);
+
+    return () => {
+      document.removeEventListener("mousedown", mousedown);
+      document.removeEventListener("mouseup", mouseup);
+    };
+  }, []);
+
   // all key events
   React.useEffect(() => {
     function keydown(e) {
@@ -135,11 +162,11 @@ export function useDrop({
 
       if (!control) return;
 
-      const up = key === "ArrowUp";
-      const down = key === "ArrowDown";
-      const enter = key === "Enter";
-      const space = key === " ";
-      const esc = key === "Escape";
+      const up = keyCode === 38;
+      const down = keyCode === 40;
+      const enter = keyCode === 13;
+      const space = keyCode === 32;
+      const esc = keyCode === 27;
 
       if (document.activeElement === control) {
         if (!isOpen && (up || down)) setIsOpen(true);
@@ -159,22 +186,26 @@ export function useDrop({
             ];
 
           setHighlightedValue(nextOption.getAttribute(valueAttr));
-          labels.push(nextOption.getAttribute(labelAttr));
         } else if (enter && isOpen) {
           if (!multiple) setIsOpen(false);
-          emitValues(highlighted.getAttribute(valueAttr));
+          _onUpdate(highlighted.getAttribute(valueAttr));
         } else if (esc) {
           setIsOpen(false);
         } else if (
           (keyCode >= 65 && keyCode <= 90) || // alpha
           (keyCode >= 48 && keyCode <= 57) // numeric
         ) {
-          const next = filter + key;
+          const next = filter.current + key;
           const highlighted = options.filter(
-            n => n.getAttribute(labelAttr).toLowerCase().indexOf(next) > -1
+            n =>
+              n
+                .getAttribute(labelAttr)
+                .toLowerCase()
+                .indexOf(next) > -1
           )[0];
 
-          setFilter(next);
+          // save for next render cycle
+          filter.current = next;
 
           if (highlighted) {
             setHighlightedValue(highlighted.getAttribute(valueAttr));
@@ -182,7 +213,8 @@ export function useDrop({
             setHighlightedValue(value);
           }
         } else {
-          setFilter("");
+          // clear if any other key is pressed
+          filter.current = '';
         }
       }
     }
@@ -192,7 +224,7 @@ export function useDrop({
     return () => {
       document.removeEventListener("keydown", keydown);
     };
-  }, [isOpen, controlRef, emitValues]);
+  }, [isOpen, controlRef, _onUpdate]);
 
   // outside click
   React.useEffect(() => {
@@ -222,28 +254,22 @@ export function useDrop({
     };
   }, [isOpen, dropdownRef]);
 
-  const computedLabel = multiple
-    ? labels.length
-      ? labels
-      : [placeholder]
-    : labels[0] || placeholder;
-
   return {
     id,
-    useNative,
     isOpen,
-    label: computedLabel,
-    items: itemsEnhanced,
+    label: _label,
+    items: _items,
     controlProps: {
       ref: controlRef,
       id,
       role: "combobox",
-      "aria-label": multiple ? computedLabel.join(", ") + ", " : computedLabel,
+      "aria-label": multiple ? _label.join(", ") + ", " : _label,
       "aria-controls": `drop-${id}`,
       "aria-haspopup": "listbox",
       "aria-expanded": isOpen,
-      onBlur(e) {
-        setIsOpen(false); // TODO
+      onBlur() {
+        if (isMouseDown.current) return;
+        setIsOpen(false);
       },
       onClick(e) {
         // avoid triggering by Enter TODO test this
@@ -252,14 +278,16 @@ export function useDrop({
         }
       }
     },
-    dropdownProps: {
+    dropProps: {
       ref: dropdownRef,
       id: `drop-${id}`,
       role: "listbox"
     },
     __meta: {
+      filter: filter.current,
+      options,
       highlightedValue,
-      highlightedNode: highlighted,
-    },
+      highlightedNode: highlighted
+    }
   };
 }
