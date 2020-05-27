@@ -1,20 +1,18 @@
 import React from "react";
-import { useDrop } from "use-drop";
 
+import { useSelect } from "../useSelect.js";
 import * as Drop from './Dropdown';
 
 export function Single() {
-  const [value, setValue] = React.useState();
+  const [cta, ctaSet] = React.useState('Please select');
 
   const {
-    label,
     items,
     isOpen,
-    controlProps,
-    dropProps,
-  } = useDrop({
-    value,
-    placeholder: "Please select",
+    setIsOpen,
+    getControlProps,
+    getDropProps,
+  } = useSelect({
     items: [
       { value: "san-francisco", label: "San Francisco" },
       { value: "los-angeles", label: "Los Angeles" },
@@ -23,19 +21,29 @@ export function Single() {
       { value: "albany", label: "Albany" },
       { value: "rochester", label: "Rochester" }
     ],
-    onUpdate(value) {
-      setValue(value);
+    onSelect(item) {
+      ctaSet(item.label);
+    },
+    onRemove() {
+      ctaSet('Please select');
     }
   });
 
   return (
     <>
-      <Drop.Control cta={label} controlProps={controlProps} />
+      <Drop.Control cta={cta} controlProps={getControlProps()} />
 
       {isOpen && (
-        <Drop.Outer dropProps={dropProps}>
+        <Drop.Outer dropProps={getDropProps()}>
           {items.map(i => (
-            <Drop.Item key={i.label} {...i} />
+            <Drop.Item
+              key={i.value}
+              value={i.value}
+              label={i.label}
+              selected={i.selected}
+              highlighted={i.highlighted}
+              itemProps={i.getItemProps()}
+            />
           ))}
         </Drop.Outer>
       )}
