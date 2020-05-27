@@ -26,7 +26,7 @@ function scrollTo(parent, child) {
 
 // scrollParent must be positioned
 export function useScroll(scrollParent, activeElement) {
-  if (typeof HTMLElement.prototype.scroll !== 'function') return; // unsupported
+  if (typeof HTMLElement.prototype.scroll !== "function") return; // unsupported
 
   React.useEffect(() => {
     if (!scrollParent || !activeElement) return;
@@ -34,18 +34,8 @@ export function useScroll(scrollParent, activeElement) {
   }, [scrollParent, activeElement]);
 }
 
-export function useDrop({
-  value = "",
-  items,
-  multiple,
-  placeholder = "",
-  onUpdate
-}) {
+export function useDrop({ items, onSelect, onOpen, onDismiss }) {
   const id = React.useMemo(() => (instance++).toString(36), []);
-
-  // computed values
-  const labels = [];
-  const values = [].concat(value).filter(Boolean);
 
   // refs
   const controlRef = React.useRef(null);
@@ -53,88 +43,121 @@ export function useDrop({
 
   // state
   const isMouseDown = React.useRef(false); // avoid re-render
-  const filter = React.useRef(''); // avoid re-render
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [highlightedValue, setHighlightedValue] = React.useState(values[0]);
-  const [options, setOptions] = React.useState([]);
-
-  // option attributes
-  const valueAttr = `data-${id}-option-value`;
-  const labelAttr = `data-${id}-option-label`;
-
-  // wrapper around onUpdate
-  const _onUpdate = React.useCallback(
-    val => {
-      if (onUpdate) {
-        onUpdate(
-          multiple
-            ? values.indexOf(val) > -1
-              ? values.filter(v => v !== val)
-              : values.concat(val)
-            : val
-        );
-      }
+  const [isOpen, isOpenSet] = React.useState(false);
+  const [highlightedIndex, highlightedIndexSet] = React.useState(0);
+  const safeHighlightedIndex = Math.min(highlightedIndex, items.length - 1);
+  const _isOpenSet = React.useCallback(
+    (open) => {
+      isOpenSet(open);
+      if (open && onOpen) onOpen();
+      if (!open && onDismiss) onDismiss();
     },
-    [values, multiple, onUpdate]
+    [isOpenSet]
   );
-
+  const _highlightedIndexSet = React.useCallback(
+    (index) => {
+      highlightedIndexSet(Math.min(index, safeHighlightedIndex));
+    },
+    [safeHighlightedIndex]
+  );
   // merge internal state/methods with items array
   const _items = React.useMemo(
     () =>
-      items.map(item => {
-        function createItem(i, { isGroupDisabled } = {}) {
-          if (values.indexOf(i.value) > -1) labels.push(i.label);
+      items.map((item, o) => {
+        return {
+          ...item,
+          highlighted: safeHighlightedIndex === o,
+          getItemProps(props = {}) {
+            return {
+              ...props,
+              onClick(e) {
+                if (item.disabled) return;
 
-          const disabled = i.disabled || isGroupDisabled;
+                if (onSelect) onSelect(item);
+                if (props.onClick) props.onClick(e);
 
-          return {
-            ...i,
-            selected: values.indexOf(i.value) > -1,
-            highlighted: highlightedValue === i.value,
-            itemProps: disabled ? {} : {
-              [valueAttr]: i.value,
-              [labelAttr]: i.label,
-              onClick() {
-                _onUpdate(i.value);
-                setHighlightedValue(i.value);
-                if (!multiple) setIsOpen(false);
-              }
-            }
-          };
-        }
-
-        if (item.items) {
-          return {
-            ...item,
-            items: item.items.map(i =>
-              createItem(i, { isGroupDisabled: item.disabled })
-            )
-          };
-        } else {
-          return createItem(item);
-        }
+                highlightedIndexSet(o < items.length ? o : 0);
+              },
+            };
+          },
+        };
       }),
-    [items, values, highlightedValue]
+    [items, onSelect, safeHighlightedIndex, highlightedIndexSet]
   );
 
-  const _label = multiple
-    ? labels.length
-      ? labels
-      : [placeholder]
-    : labels[0] || placeholder;
+  // all key events
+  React.useEffect(() => {
+    function keydown(e) {
+      const { keyCode } = e;
+      const control = controlRef.current;
 
-  // compute selected option based on highlightedValue
-  const highlighted = React.useMemo(() => {
-    return options.filter(
-      n => n.getAttribute(valueAttr) === highlightedValue
-    )[0];
-  }, [options, highlightedValue]);
+      if (!control) return;
 
-  // only search for options when open
-  React.useLayoutEffect(() => {
-    const nodes = [].slice.call(document.querySelectorAll(`[${valueAttr}]`));
-    if (nodes.length) setOptions(nodes);
-  }, [isOpen]);
+      const up = keyCode === 38;
+      const down = keyCode === 40;
+      const enter = keyCode === 13;
+      const space = keyCode === 32;
+      const esc = keyCode === 27;
+
+      if (document.activeElement === control) {
+        if (!isOpen && (up || down)) _isOpenSet(true);
+        if (space) _isOpenSet(!isOpen);
+      }
+
+      if (up || down) {
+        e.preventDefault();
+      }
+
+      if (isOpen) {
+        const lastIndex = items.length - 1;
+        const nextIndex = up ? highlightedIndex - 1 : highlightedIndex + 1;
+
+        if (up || down) {
+          highlightedIndexSet(
+            nextIndex > lastIndex ? 0 : nextIndex < 0 ? lastIndex : nextIndex
+          );
+        } else if (enter && isOpen) {
+          if (onSelect) onSelect(items[safeHighlightedIndex]);
+        } else if (esc) {
+          _isOpenSet(false);
+        }
+      }
+    }
+
+    document.addEventListener("keydown", keydown);
+
+    return () => {
+      document.removeEventListener("keydown", keydown);
+    };
+  }, [highlightedIndex, items, isOpen, controlRef, onSelect]);
+
+  // outside click
+  React.useEffect(() => {
+    function click(e) {
+      const dropdown = dropdownRef.current;
+      const control = controlRef.current;
+
+      if (
+        !dropdown ||
+        !control ||
+        e.target === dropdown ||
+        e.target === control ||
+        dropdown.contains(e.target) ||
+        control.contains(e.target)
+      )
+        return;
+
+      _isOpenSet(false);
+    }
+
+    if (isOpen) {
+      document.addEventListener("click", click);
+    }
+
+    return () => {
+      document.removeEventListener("click", click);
+    };
+  }, [isOpen, dropdownRef]);
 
   // used to determine if drop should close on blur
   React.useEffect(() => {
@@ -154,140 +177,192 @@ export function useDrop({
     };
   }, []);
 
-  // all key events
-  React.useEffect(() => {
-    function keydown(e) {
-      const { key, keyCode } = e;
-      const control = controlRef.current;
+  return {
+    id,
+    isOpen,
+    setIsOpen: _isOpenSet,
+    items: _items,
+    highlightedIndexSet: _highlightedIndexSet,
+    getControlProps() {
+      return {
+        ref: controlRef,
+        id,
+        role: "listbox",
+        "aria-controls": `drop-${id}`,
+        "aria-haspopup": "listbox",
+        "aria-expanded": isOpen,
+        onBlur() {
+          if (isMouseDown.current) return;
+          _isOpenSet(false);
+        },
+        onClick(e) {
+          // avoid triggering by Enter TODO test this
+          if (e.clientX + e.clientY > 0) {
+            _isOpenSet(!isOpen);
+          }
+        },
+      };
+    },
+    getDropProps() {
+      return {
+        ref: dropdownRef,
+        id: `drop-${id}`,
+        role: "listbox",
+      };
+    },
+  };
+}
 
-      if (!control) return;
+export function useSelect({
+  items,
+  multiple = false,
+  onSelect,
+  onRemove,
+  ...options
+}) {
+  const filter = React.useRef(""); // avoid re-render
+  const [selected, selectedSet] = React.useState(
+    items.filter((i) => i.selected)
+  );
 
-      const up = keyCode === 38;
-      const down = keyCode === 40;
-      const enter = keyCode === 13;
-      const space = keyCode === 32;
-      const esc = keyCode === 27;
+  const { isOpen, setIsOpen, items: results, highlightedIndexSet, ...rest } = useDrop({
+    ...options,
+    items,
+    onSelect(item) {
+      const isSelected = Boolean(
+        selected.filter((i) => i.value === item.value)[0]
+      );
 
-      if (document.activeElement === control) {
-        if (!isOpen && (up || down)) setIsOpen(true);
-        if (space) setIsOpen(!isOpen);
+      if (isSelected) {
+        selectedSet(
+          multiple ? selected.filter((i) => i.value !== item.value) : []
+        );
+        if (onRemove) onRemove(item);
+      } else {
+        selectedSet(multiple ? selected.concat(item) : [item]);
+        if (onSelect) onSelect(item);
       }
 
-      if (isOpen) {
-        if (up || down) {
-          e.preventDefault();
+      if (!multiple) setIsOpen(false);
+    },
+  });
 
-          const lastIndex = options.length - 1;
-          const currIndex = options.indexOf(highlighted);
-          const nextIndex = up ? currIndex - 1 : currIndex + 1;
-          const nextOption =
-            options[
-              nextIndex > lastIndex ? 0 : nextIndex < 0 ? lastIndex : nextIndex
-            ];
+  React.useEffect(() => {
+    function keydown({ key, keyCode }) {
+      if (
+        (keyCode >= 65 && keyCode <= 90) || // alpha
+        (keyCode >= 48 && keyCode <= 57) // numeric
+      ) {
+        filter.current = filter.current + key;
 
-          setHighlightedValue(nextOption.getAttribute(valueAttr));
-        } else if (enter && isOpen) {
-          if (!multiple) setIsOpen(false);
-          _onUpdate(highlighted.getAttribute(valueAttr));
-        } else if (esc) {
-          setIsOpen(false);
-        } else if (
-          (keyCode >= 65 && keyCode <= 90) || // alpha
-          (keyCode >= 48 && keyCode <= 57) // numeric
-        ) {
-          const next = filter.current + key;
-          const highlighted = options.filter(
-            n =>
-              n
-                .getAttribute(labelAttr)
-                .toLowerCase()
-                .indexOf(next) > -1
-          )[0];
-
-          // save for next render cycle
-          filter.current = next;
-
-          if (highlighted) {
-            setHighlightedValue(highlighted.getAttribute(valueAttr));
-          } else {
-            setHighlightedValue(value);
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].label.toLowerCase().indexOf(filter.current) > -1) {
+            highlightedIndexSet(i);
+            break;
           }
-        } else {
-          // clear if any other key is pressed
-          filter.current = '';
         }
+      } else {
+        filter.current = "";
       }
     }
 
-    document.addEventListener("keydown", keydown);
+    if (isOpen) document.addEventListener("keydown", keydown);
 
     return () => {
       document.removeEventListener("keydown", keydown);
     };
-  }, [isOpen, controlRef, _onUpdate]);
-
-  // outside click
-  React.useEffect(() => {
-    function click(e) {
-      const dropdown = dropdownRef.current;
-      const control = controlRef.current;
-
-      if (
-        !dropdown ||
-        !control ||
-        e.target === dropdown ||
-        e.target === control ||
-        dropdown.contains(e.target) ||
-        control.contains(e.target)
-      )
-        return;
-
-      setIsOpen(false);
-    }
-
-    if (isOpen) {
-      document.addEventListener("click", click);
-    }
-
-    return () => {
-      document.removeEventListener("click", click);
-    };
-  }, [isOpen, dropdownRef]);
+  }, [isOpen, items, filter]);
 
   return {
-    id,
+    ...rest,
     isOpen,
-    label: _label,
-    items: _items,
-    controlProps: {
-      ref: controlRef,
-      id,
-      role: "combobox",
-      "aria-label": multiple ? _label.join(", ") + ", " : _label,
-      "aria-controls": `drop-${id}`,
-      "aria-haspopup": "listbox",
-      "aria-expanded": isOpen,
-      onBlur() {
-        if (isMouseDown.current) return;
-        setIsOpen(false);
-      },
-      onClick(e) {
-        // avoid triggering by Enter TODO test this
-        if (e.clientX + e.clientY > 0) {
-          setIsOpen(!isOpen);
-        }
+    setIsOpen,
+    items: results.map((result) => {
+      return {
+        ...result,
+        selected: Boolean(selected.filter((i) => i.value === result.value)[0]),
+      };
+    }),
+    clear() {
+      selectedSet([]);
+    },
+  };
+}
+
+export function useCombobox({
+  items,
+  multiple = false,
+  onSelect,
+  onRemove,
+  ...options
+}) {
+  const [selected, selectedSet] = React.useState(
+    items.filter((i) => i.selected)
+  );
+
+  const {
+    isOpen,
+    setIsOpen,
+    items: results,
+    getControlProps,
+    ...rest
+  } = useDrop({
+    ...options,
+    items,
+    onSelect(item) {
+      const isSelected = Boolean(
+        selected.filter((i) => i.value === item.value)[0]
+      );
+
+      if (isSelected) {
+        selectedSet(
+          multiple ? selected.filter((i) => i.value !== item.value) : []
+        );
+        if (onRemove) onRemove(item);
+      } else {
+        selectedSet(multiple ? selected.concat(item) : [item]);
+        if (onSelect) onSelect(item);
       }
     },
-    dropProps: {
-      ref: dropdownRef,
-      id: `drop-${id}`,
-      role: "listbox"
+  });
+
+  function getInputProps({ onBlur, ...props }) {
+    const controlProps = getControlProps();
+
+    return {
+      ...controlProps,
+      ...props,
+      onKeyUp(e) {
+        if (e.keyCode === 27) {
+          e.target.blur();
+          return;
+        }
+        if (e.keyCode === 13) return;
+        if (e.target.value && Boolean(results.length) && !isOpen) {
+          setIsOpen(true);
+        }
+      },
+      onBlur(e) {
+        controlProps.onBlur(); // delegate to drop handler
+        if (onBlur) onBlur(e);
+      },
+      onClick() {}, // override
+    };
+  }
+
+  return {
+    ...rest,
+    isOpen,
+    setIsOpen,
+    items: results.map((result) => {
+      return {
+        ...result,
+        selected: Boolean(selected.filter((i) => i.value === result.value)[0]),
+      };
+    }),
+    getInputProps,
+    clear() {
+      selectedSet([]);
     },
-    __meta: {
-      filter: filter.current,
-      options,
-      highlightedValue,
-      highlightedNode: highlighted
-    }
   };
 }
