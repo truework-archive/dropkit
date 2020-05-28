@@ -50,13 +50,17 @@ export function useDrop({
   const _items = React.useMemo<Item[]>(
     () =>
       items.map((item, o) => {
+        const _id = `${id}-item-${item.value}`;
+
         return {
           ...item,
+          id: _id,
           selected: false,
           highlighted: safeHighlightedIndex === o,
           getItemProps(props = {}) {
             return {
               ...props,
+              id: _id,
               onClick(e) {
                 if (item.disabled) return;
 
@@ -91,15 +95,12 @@ export function useDrop({
         if (space) _isOpenSet(!isOpen);
       }
 
-      if (up || down) {
-        e.preventDefault();
-      }
-
       if (isOpen) {
         const lastIndex = items.length - 1;
         const nextIndex = up ? highlightedIndex - 1 : highlightedIndex + 1;
 
         if (up || down) {
+          e.preventDefault();
           highlightedIndexSet(
             nextIndex > lastIndex ? 0 : nextIndex < 0 ? lastIndex : nextIndex
           );
@@ -169,6 +170,7 @@ export function useDrop({
     isOpen,
     isOpenSet: _isOpenSet,
     items: _items,
+    highlightedIndex,
     highlightedIndexSet: _highlightedIndexSet,
     getControlProps(props = {}) {
       return {
@@ -176,7 +178,7 @@ export function useDrop({
         ref: controlRef,
         id,
         role: "listbox",
-        "aria-controls": `drop-${id}`,
+        "aria-controls": `${id}-drop`,
         "aria-haspopup": "listbox",
         "aria-expanded": isOpen,
         onBlur() {
@@ -195,7 +197,7 @@ export function useDrop({
       return {
         ...props,
         ref: dropdownRef,
-        id: `drop-${id}`,
+        id: `${id}-drop`, // used by useScroll
         role: "listbox",
       };
     },

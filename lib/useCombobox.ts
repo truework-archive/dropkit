@@ -51,7 +51,7 @@ export function useCombobox({
     },
   });
 
-  function getInputProps({ onBlur, ...props }: Partial<React.HTMLProps<HTMLElement>>) {
+  function getInputProps({ onBlur, ...props }: Partial<React.HTMLAttributes<HTMLElement>>) {
     const controlProps = getControlProps();
 
     return {
