@@ -17,7 +17,7 @@ export function useSelect({
   ...options
 }: {
   items: ItemConfig[];
-  multiple: boolean;
+  multiple?: boolean;
   onSelect?: OnSelect;
   onRemove?: OnRemove;
   onOpen?: Noop;

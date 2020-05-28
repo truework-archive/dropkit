@@ -16,7 +16,7 @@ export function useCombobox({
   ...options
 }: {
   items: ItemConfig[];
-  multiple: boolean;
+  multiple?: boolean;
   onSelect?: OnSelect;
   onRemove?: OnRemove;
 }): UseCombobox {

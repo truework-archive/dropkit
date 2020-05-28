@@ -1,8 +1,8 @@
 import * as React from "react";
 
 export type HTMLPropGetter = (
-  props?: Partial<React.HTMLProps<HTMLElement>>
-) => Partial<React.HTMLProps<HTMLElement>>;
+  props?: Partial<React.HTMLAttributes<HTMLElement>>
+) => Partial<React.HTMLAttributes<HTMLElement>>;
 
 export type OnSelect = (item: ItemConfig) => void;
 export type OnRemove = OnSelect;
