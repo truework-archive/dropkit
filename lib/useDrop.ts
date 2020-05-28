@@ -29,9 +29,8 @@ export function useDrop({
 
   // state
   const isMouseDown = React.useRef(false); // avoid re-render
+
   const [isOpen, isOpenSet] = React.useState(false);
-  const [highlightedIndex, highlightedIndexSet] = React.useState(0);
-  const safeHighlightedIndex = Math.min(highlightedIndex, items.length - 1);
   const _isOpenSet = React.useCallback(
     (open: boolean) => {
       isOpenSet(open);
@@ -40,12 +39,16 @@ export function useDrop({
     },
     [isOpenSet]
   );
+
+  const [highlightedIndex, highlightedIndexSet] = React.useState(0);
+  const safeHighlightedIndex = Math.min(highlightedIndex, items.length - 1);
   const _highlightedIndexSet = React.useCallback(
     (index: number) => {
       highlightedIndexSet(Math.min(index, safeHighlightedIndex));
     },
     [safeHighlightedIndex]
   );
+
   // merge internal state/methods with items array
   const _items = React.useMemo<Item[]>(
     () =>
@@ -75,6 +78,8 @@ export function useDrop({
       }),
     [items, onSelect, safeHighlightedIndex, highlightedIndexSet]
   );
+
+  const highlightedItem = _items.filter(i => i.highlighted)[0];
 
   // all key events
   React.useEffect(() => {
@@ -165,6 +170,30 @@ export function useDrop({
     };
   }, []);
 
+  if (typeof HTMLElement.prototype.scroll === "function") {
+    React.useLayoutEffect(() => {
+      const parent = dropdownRef.current;
+      const child = document.getElementById(highlightedItem.id);
+
+      if (!parent || !child) return;
+
+      const { top: pt, bottom: pb } = parent.getBoundingClientRect();
+      const { scrollTop: pst } = parent;
+      const { top: ct, bottom: cb } = child.getBoundingClientRect();
+      const ch = cb - ct;
+
+      const above = cb <= pt;
+      const below = ct + ch > pb;
+
+      if (!above && !below) return;
+
+      const offset = above ? pt - ct : cb - pb;
+      const distance = offset * (above ? -1 : 1);
+
+      parent.scroll(0, pst + distance);
+    }, [dropdownRef, highlightedItem]);
+  }
+
   return {
     id,
     isOpen,
@@ -197,7 +226,7 @@ export function useDrop({
       return {
         ...props,
         ref: dropdownRef,
-        id: `${id}-drop`, // used by useScroll
+        id: `${id}-drop`,
         role: "listbox",
       };
     },
