@@ -2,7 +2,7 @@
   "name": "use-drop",
   "version": "0.2.1",
   "description": "A minimalist approach to custom dropdowns.",
-  "source": "index.js",
+  "source": "index.ts",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
   "unpkg": "dist/index.umd.js",
@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/estrattonbailey/use-drop#readme",
   "devDependencies": {
+    "@types/react": "^16.9.35",
     "ava": "^2.4.0",
     "microbundle": "^0.11.0",
     "react": "^16.13.1",
