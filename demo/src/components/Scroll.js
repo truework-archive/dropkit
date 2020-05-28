@@ -1,45 +1,44 @@
 import React from "react";
-import { useDrop, useScroll } from "use-drop";
+import { useSelect } from "use-drop";
 
+import { items as defaultItems } from '../items';
 import * as Drop from './Dropdown';
 
 export function Scroll() {
-  const [value, setValue] = React.useState();
+  const [label, labelSet] = React.useState('Please select');
 
   const {
-    label,
     items,
     isOpen,
-    controlProps,
-    dropProps,
-    __meta,
-  } = useDrop({
-    value,
-    placeholder: "Please select",
-    multiple: true,
-    items: [
-      { value: "san-francisco", label: "San Francisco" },
-      { value: "los-angeles", label: "Los Angeles" },
-      { value: "san-diego", label: "San Diego" },
-      { value: "new-york", label: "New York" },
-      { value: "albany", label: "Albany" },
-      { value: "rochester", label: "Rochester" }
-    ],
-    onUpdate(value) {
-      setValue(value);
+    getControlProps,
+    getDropProps,
+  } = useSelect({
+    items: defaultItems,
+    onSelect(item) {
+      labelSet(item.label);
+    },
+    onRemove() {
+      labelSet('Please select');
     }
   });
 
-  useScroll(dropProps.ref.current, __meta.highlightedNode);
+  // useScroll(dropProps.ref.current, __meta.highlightedNode);
 
   return (
     <>
-      <Drop.Control cta={label} controlProps={controlProps} />
+      <Drop.Control cta={label} controlProps={getControlProps()} />
 
       {isOpen && (
-        <Drop.Outer height="160px" dropProps={dropProps}>
+        <Drop.Outer height="160px" dropProps={getDropProps()}>
           {items.map(i => (
-            <Drop.Item key={i.label} {...i} />
+            <Drop.Item
+              key={i.value}
+              value={i.value}
+              label={i.label}
+              selected={i.selected}
+              highlighted={i.highlighted}
+              itemProps={i.getItemProps()}
+            />
           ))}
         </Drop.Outer>
       )}

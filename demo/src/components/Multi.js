@@ -1,6 +1,7 @@
 import React from "react";
+import { useSelect } from "use-drop";
 
-import { useSelect } from "../useSelect.js";
+import { items as defaultItems } from '../items';
 import * as Drop from './Dropdown';
 
 export function Multi() {
@@ -13,14 +14,7 @@ export function Multi() {
     getDropProps,
   } = useSelect({
     multiple: true,
-    items: [
-      { value: "san-francisco", label: "San Francisco" },
-      { value: "los-angeles", label: "Los Angeles" },
-      { value: "san-diego", label: "San Diego" },
-      { value: "new-york", label: "New York" },
-      { value: "albany", label: "Albany" },
-      { value: "rochester", label: "Rochester" }
-    ],
+    items: defaultItems,
     onSelect(item) {
       labelsSet(labels.concat(item.label));
     },

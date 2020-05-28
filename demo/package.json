@@ -44,6 +44,6 @@
     "regenerator-runtime": "^0.13.5",
     "styled-components": "^5.1.0",
     "svbstrate": "^4.1.1",
-    "use-drop": "^0.2.0"
+    "use-drop": "^0.3.0"
   }
 }

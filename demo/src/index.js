@@ -1,8 +1,6 @@
 import 'core-js/features/object/assign';
 import 'regenerator-runtime/runtime';
 
-import "@/styles/main.css";
-
 import React from "react";
 import { render } from "react-dom";
 import { ThemeProvider } from "styled-components";
