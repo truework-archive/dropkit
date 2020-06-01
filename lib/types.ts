@@ -1,15 +1,5 @@
 import * as React from "react";
 
-export type HTMLPropGetter = (
-  props?: Partial<React.HTMLAttributes<HTMLElement>>
-) => Partial<React.HTMLAttributes<HTMLElement>>;
-
-export type HTMLPropGetterWithRef = (
-  props?: Partial<React.HTMLAttributes<HTMLElement>>
-) => Partial<React.HTMLAttributes<HTMLElement>> & {
-  ref: React.RefObject<HTMLElement>;
-};
-
 export type OnSelect = (item: ItemConfig) => void;
 export type OnRemove = OnSelect;
 export type Noop = () => void;
@@ -23,7 +13,7 @@ export type ItemConfig = {
 export type Item = ItemConfig & {
   selected: boolean;
   highlighted: boolean;
-  getItemProps: HTMLPropGetter;
+  getItemProps(props?: React.HTMLProps<HTMLElement>): any;
 };
 
 export type UseDrop = {
@@ -33,8 +23,8 @@ export type UseDrop = {
   items: Item[];
   highlightedIndex: number;
   highlightedIndexSet(index: number): void;
-  getControlProps: HTMLPropGetterWithRef;
-  getDropProps: HTMLPropGetterWithRef;
+  getControlProps(props?: React.HTMLProps<HTMLElement>): any;
+  getDropProps(props?: React.HTMLProps<HTMLElement>): any;
 };
 
 export type UseSelect = {
@@ -42,8 +32,8 @@ export type UseSelect = {
   isOpen: boolean;
   isOpenSet(open: boolean): void; // todo
   items: Item[];
-  getControlProps: HTMLPropGetterWithRef;
-  getDropProps: HTMLPropGetterWithRef;
+  getControlProps(props?: React.HTMLProps<HTMLElement>): any;
+  getDropProps(props?: React.HTMLProps<HTMLElement>): any;
   clear(): void;
 };
 
@@ -52,7 +42,7 @@ export type UseCombobox = {
   isOpen: boolean;
   isOpenSet(open: boolean): void; // todo
   items: Item[];
-  getInputProps: HTMLPropGetterWithRef;
-  getDropProps: HTMLPropGetterWithRef;
+  getInputProps(props?: React.HTMLProps<HTMLInputElement>): any;
+  getDropProps(props?: React.HTMLProps<HTMLElement>): any;
   clear(): void;
 };

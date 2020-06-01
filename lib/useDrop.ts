@@ -64,7 +64,7 @@ export function useDrop({
             return {
               ...props,
               id: _id,
-              onClick(e) {
+              onClick(e: React.MouseEvent<HTMLElement>) {
                 if (item.disabled) return;
 
                 if (onSelect) onSelect(item);
@@ -172,8 +172,10 @@ export function useDrop({
 
   if (typeof HTMLElement.prototype.scroll === "function") {
     React.useLayoutEffect(() => {
+      if (!isOpen) return;
+
       const parent = dropdownRef.current;
-      const child = document.getElementById(highlightedItem.id);
+      const child = highlightedItem ? document.getElementById(highlightedItem.id) : null;
 
       if (!parent || !child) return;
 
@@ -191,7 +193,7 @@ export function useDrop({
       const distance = offset * (above ? -1 : 1);
 
       parent.scroll(0, pst + distance);
-    }, [dropdownRef, highlightedItem]);
+    }, [isOpen, dropdownRef, highlightedItem]);
   }
 
   return {

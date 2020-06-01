@@ -51,8 +51,10 @@ export function useCombobox({
     },
   });
 
-  function getInputProps({ onBlur, ...props }: Partial<React.HTMLAttributes<HTMLElement>>) {
+  function getInputProps({ onBlur, ...props }: React.HTMLProps<HTMLInputElement>) {
     const controlProps = getControlProps();
+
+    delete controlProps.onClick;
 
     return {
       ...controlProps,
@@ -66,15 +68,14 @@ export function useCombobox({
           return;
         }
         if (e.keyCode === 13) return;
-        if (input.value && Boolean(results.length) && !isOpen) {
+        if (input.value && !isOpen) {
           isOpenSet(true);
         }
       },
-      onBlur(e: React.FocusEvent<HTMLElement>) {
+      onBlur(e: React.FocusEvent<HTMLInputElement>) {
         if (controlProps.onBlur) controlProps.onBlur(e); // delegate to drop handler
         if (onBlur) onBlur(e);
       },
-      onClick() {}, // override
     };
   }
 
@@ -89,12 +90,7 @@ export function useCombobox({
       };
     }),
     getInputProps,
-    getDropProps(props: Partial<React.HTMLProps<HTMLElement>>) {
-      return {
-        ...getDropProps(props),
-        role: "listbox",
-      };
-    },
+    getDropProps,
     clear() {
       selectedSet([]);
     },
