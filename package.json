@@ -1,6 +1,6 @@
 {
   "name": "use-drop",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A minimalist approach to custom dropdowns.",
   "source": "index.ts",
   "main": "dist/index.js",
