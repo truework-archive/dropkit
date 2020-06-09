@@ -5,7 +5,8 @@ import {
   ItemConfig,
   OnSelect,
   OnRemove,
-  UseCombobox
+  UseCombobox,
+  Noop,
 } from "./types";
 
 export function useCombobox({
@@ -19,6 +20,8 @@ export function useCombobox({
   multiple?: boolean;
   onSelect?: OnSelect;
   onRemove?: OnRemove;
+  onOpen?: Noop;
+  onDismiss?: Noop;
 }): UseCombobox {
   const [selected, selectedSet] = React.useState(
     items.filter((i) => i.selected)
@@ -48,6 +51,8 @@ export function useCombobox({
         selectedSet(multiple ? selected.concat(item) : [item]);
         if (onSelect) onSelect(item);
       }
+
+      if (!multiple) isOpenSet(false);
     },
   });
 
@@ -68,7 +73,7 @@ export function useCombobox({
           return;
         }
         if (e.keyCode === 13) return;
-        if (input.value && !isOpen) {
+        if (Boolean(input.value) && !isOpen) {
           isOpenSet(true);
         }
       },

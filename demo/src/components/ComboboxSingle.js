@@ -20,7 +20,6 @@ export function ComboboxSingle() {
     items: _items,
     onSelect({ label }) {
       searchSet(label);
-      isOpenSet(false);
     },
   });
 
