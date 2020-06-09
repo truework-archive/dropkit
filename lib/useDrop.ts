@@ -110,7 +110,7 @@ export function useDrop({
             nextIndex > lastIndex ? 0 : nextIndex < 0 ? lastIndex : nextIndex
           );
         } else if (enter && isOpen) {
-          if (onSelect) onSelect(items[safeHighlightedIndex]);
+          if (onSelect && items[safeHighlightedIndex]) onSelect(items[safeHighlightedIndex]);
         } else if (esc) {
           _isOpenSet(false);
         }
