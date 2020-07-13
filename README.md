@@ -20,12 +20,12 @@ npm i use-drop --save
 
 ```javascript
 import React from "react";
-const cx from "classnames";
+import cx from "classnames";
 
 import { useSelect } from "use-drop";
 
 function Dropdown() {
-  const [label, lableSet] = React.useState("Please select");
+  const [label, labelSet] = React.useState("Please select");
 
   const {
     id,
