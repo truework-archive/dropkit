@@ -1,7 +1,7 @@
 {
-  "name": "use-drop",
-  "version": "0.5.1",
-  "description": "A minimalist approach to custom dropdowns.",
+  "name": "dropkit",
+  "version": "0.10.0",
+  "description": "A minimalist approach to custom dropdowns, autocompletes, and more.",
   "source": "index.ts",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
@@ -17,14 +17,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/estrattonbailey/use-drop.git"
+    "url": "git+ssh://git@github.com/truework/dropkit.git"
   },
   "author": "estrattonbailey",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/estrattonbailey/use-drop/issues"
+    "url": "https://github.com/truework/dropkit/issues"
   },
-  "homepage": "https://github.com/estrattonbailey/use-drop#readme",
+  "homepage": "https://github.com/truework/dropkit#readme",
   "devDependencies": {
     "@types/react": "^16.9.35",
     "ava": "^2.4.0",

@@ -1,6 +1,6 @@
-# use-drop ![npm](https://img.shields.io/npm/v/use-drop) [![](https://badgen.net/bundlephobia/minzip/use-drop)](https://bundlephobia.com/result?p=use-drop)
+# dropkit ![npm](https://img.shields.io/npm/v/dropkit) [![](https://badgen.net/bundlephobia/minzip/dropkit)](https://bundlephobia.com/result?p=dropkit)
 
-A minimalist approach to custom dropdowns and autocompletes.
+A minimalist approach to custom dropdowns, autocompletes, and more.
 
 ### Features
 
@@ -13,7 +13,7 @@ A minimalist approach to custom dropdowns and autocompletes.
 ### Install
 
 ```
-npm i use-drop --save
+npm i dropkit --save
 ```
 
 # Usage
@@ -22,7 +22,7 @@ npm i use-drop --save
 import React from "react";
 import cx from "classnames";
 
-import { useSelect } from "use-drop";
+import { useSelect } from "dropkit";
 
 function Dropdown() {
   const [label, labelSet] = React.useState("Please select");
@@ -75,6 +75,11 @@ function Dropdown() {
   );
 }
 ```
+
+### Credits
+Many thanks to [@wmira](https://github.com/wmira) for providing the `dropkit`
+npm package name. If you're looking for the Digital Ocean V2 REST API library,
+try [`v0.9.4` and below](https://www.npmjs.com/package/dropkit/v/0.9.4).
 
 ### License
 
