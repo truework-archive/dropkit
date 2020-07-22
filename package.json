@@ -1,6 +1,6 @@
 {
   "name": "dropkit",
-  "version": "0.10.0",
+  "version": "1.0.0-0",
   "description": "A minimalist approach to custom dropdowns, autocompletes, and more.",
   "source": "index.ts",
   "main": "dist/index.js",
