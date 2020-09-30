@@ -13,7 +13,7 @@
   "scripts": {
     "build": "microbundle build",
     "watch": "microbundle watch",
-    "publish": "np"
+    "release": "np"
   },
   "repository": {
     "type": "git",
