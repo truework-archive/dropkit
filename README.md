@@ -53,7 +53,7 @@ function Dropdown() {
   return (
     <>
       <label htmlFor={id}>Cities</label>
-      <button id={id} controlProps={getControlProps()}>{label}</button>
+      <button id={id} {...getControlProps()}>{label}</button>
 
       {isOpen && (
         <ul {...getDropProps()}>
