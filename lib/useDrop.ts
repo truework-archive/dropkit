@@ -170,31 +170,30 @@ export function useDrop({
     };
   }, []);
 
-  if (typeof HTMLElement.prototype.scroll === "function") {
-    React.useLayoutEffect(() => {
-      if (!isOpen) return;
+  React.useLayoutEffect(() => {
+    if (typeof HTMLElement.prototype.scroll !== "function") return;
+    if (!isOpen) return;
 
-      const parent = dropdownRef.current;
-      const child = highlightedItem ? document.getElementById(highlightedItem.id) : null;
+    const parent = dropdownRef.current;
+    const child = highlightedItem ? document.getElementById(highlightedItem.id) : null;
 
-      if (!parent || !child) return;
+    if (!parent || !child) return;
 
-      const { top: pt, bottom: pb } = parent.getBoundingClientRect();
-      const { scrollTop: pst } = parent;
-      const { top: ct, bottom: cb } = child.getBoundingClientRect();
-      const ch = cb - ct;
+    const { top: pt, bottom: pb } = parent.getBoundingClientRect();
+    const { scrollTop: pst } = parent;
+    const { top: ct, bottom: cb } = child.getBoundingClientRect();
+    const ch = cb - ct;
 
-      const above = cb <= pt;
-      const below = ct + ch > pb;
+    const above = cb <= pt;
+    const below = ct + ch > pb;
 
-      if (!above && !below) return;
+    if (!above && !below) return;
 
-      const offset = above ? pt - ct : cb - pb;
-      const distance = offset * (above ? -1 : 1);
+    const offset = above ? pt - ct : cb - pb;
+    const distance = offset * (above ? -1 : 1);
 
-      parent.scroll(0, pst + distance);
-    }, [isOpen, dropdownRef, highlightedItem]);
-  }
+    parent.scroll(0, pst + distance);
+  }, [isOpen, dropdownRef, highlightedItem]);
 
   return {
     id,
